@@ -57,7 +57,7 @@ if "logged_in" not in st.session_state:
 def auth_page():
 
     st.markdown("""
-    <h2 style='text-align:center;'>🔐 Skin Cancer AI Classifier</h2>
+    <h2 style='text-align:center;'>🔐 Skin Cancer AI Authentication</h2>
     """, unsafe_allow_html=True)
 
     menu = ["Login", "Register"]
@@ -157,8 +157,6 @@ margin-bottom: 40px;">
 <h3>Early Detection | Rural Healthcare Support | Instant AI Prediction</h3>
 </div>
 """, unsafe_allow_html=True)
-
-# ===== REST OF YOUR ORIGINAL CODE CONTINUES SAME =====
 
 # ===== WHY THIS MATTERS =====
 st.markdown("## 🇮🇳 Why This Matters")

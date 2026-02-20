@@ -6,6 +6,105 @@ from PIL import Image
 import datetime
 import gdown
 import os
+import sqlite3
+import hashlib
+
+# ===== PAGE CONFIG =====
+st.set_page_config(page_title="🩺 Skin Cancer AI Classifier", layout="wide")
+
+# ==============================
+# 🔐 PROFESSIONAL AUTH SYSTEM
+# ==============================
+
+# ----- DATABASE -----
+conn = sqlite3.connect("users.db", check_same_thread=False)
+c = conn.cursor()
+
+c.execute("""
+CREATE TABLE IF NOT EXISTS users(
+    username TEXT PRIMARY KEY,
+    password TEXT
+)
+""")
+conn.commit()
+
+# ----- HASH PASSWORD -----
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+# ----- REGISTER USER -----
+def register_user(username, password):
+    try:
+        c.execute("INSERT INTO users (username, password) VALUES (?, ?)",
+                  (username, hash_password(password)))
+        conn.commit()
+        return True
+    except:
+        return False
+
+# ----- LOGIN USER -----
+def login_user(username, password):
+    c.execute("SELECT * FROM users WHERE username=? AND password=?",
+              (username, hash_password(password)))
+    return c.fetchone()
+
+# ----- SESSION -----
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+    st.session_state.username = None
+
+# ----- AUTH PAGE -----
+def auth_page():
+
+    st.markdown("""
+    <h2 style='text-align:center;'>🔐 Skin Cancer AI Classifier</h2>
+    """, unsafe_allow_html=True)
+
+    menu = ["Login", "Register"]
+    choice = st.radio("Select Option", menu)
+
+    if choice == "Register":
+        st.subheader("📝 Create New Account")
+        new_user = st.text_input("Username")
+        new_pass = st.text_input("Password", type="password")
+
+        if st.button("Register"):
+            if register_user(new_user, new_pass):
+                st.success("Account Created Successfully ✅")
+                st.info("Now go to Login tab")
+            else:
+                st.error("Username already exists ❌")
+
+    if choice == "Login":
+        st.subheader("🔐 Login to Continue")
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+
+        if st.button("Login"):
+            result = login_user(username, password)
+            if result:
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                st.success(f"Welcome {username} ✅")
+                st.rerun()
+            else:
+                st.error("Invalid Username or Password ❌")
+
+# ----- STOP IF NOT LOGGED IN -----
+if not st.session_state.logged_in:
+    auth_page()
+    st.stop()
+
+# ----- SIDEBAR USER INFO -----
+st.sidebar.markdown(f"👋 Logged in as: **{st.session_state.username}**")
+if st.sidebar.button("Logout"):
+    st.session_state.logged_in = False
+    st.session_state.username = None
+    st.rerun()
+
+# ==============================
+# 🧠 ORIGINAL AI APP STARTS
+# ==============================
 
 # ===== CONFIG =====
 IMG_SIZE = 224
@@ -36,9 +135,6 @@ def load_model():
 
 model = load_model()
 
-# ===== PAGE CONFIG =====
-st.set_page_config(page_title="🩺 Skin Cancer AI Classifier", layout="wide")
-
 # ===== SIDEBAR =====
 st.sidebar.title("📊 Model Overview")
 st.sidebar.metric("Model", "MobileNetV2")
@@ -51,16 +147,18 @@ st.sidebar.write("National Healthcare Hackathon 🇮🇳")
 # ===== HEADER =====
 st.markdown("""
 <div style="
-    background: linear-gradient(90deg,#0f2027,#203a43,#2c5364);
-    padding: 35px;
-    border-radius: 20px;
-    text-align: center;
-    color: white;
-    margin-bottom: 40px;">
-    <h1>🩺 Skin Cancer AI Classifier</h1>
-    <h3>Early Detection | Rural Healthcare Support | Instant AI Prediction</h3>
+background: linear-gradient(90deg,#0f2027,#203a43,#2c5364);
+padding: 35px;
+border-radius: 20px;
+text-align: center;
+color: white;
+margin-bottom: 40px;">
+<h1>🩺 Skin Cancer AI Classifier</h1>
+<h3>Early Detection | Rural Healthcare Support | Instant AI Prediction</h3>
 </div>
 """, unsafe_allow_html=True)
+
+# ===== REST OF YOUR ORIGINAL CODE CONTINUES SAME =====
 
 # ===== WHY THIS MATTERS =====
 st.markdown("## 🇮🇳 Why This Matters")
@@ -83,7 +181,6 @@ with col1:
 with col2:
     camera_image = st.camera_input("Take Live Photo")
 
-# ===== SELECT IMAGE =====
 img = None
 if uploaded_file:
     img = Image.open(uploaded_file).convert("RGB")
@@ -111,7 +208,6 @@ if img:
     overall_conf = preds[sorted_idx[0]] * 100
 
     with col_pred:
-
         st.markdown("## 🥇 Top 3 Predictions")
 
         top3_idx = sorted_idx[:3]
@@ -143,8 +239,7 @@ if img:
                         border-radius:20px;
                         text-align:center;
                         box-shadow:0 6px 18px rgba(0,0,0,0.15);
-                        margin-bottom:20px;
-                    ">
+                        margin-bottom:20px;">
                         <h2>{emoji} {cls_name}</h2>
                         <h1 style="color:{color}; font-size:42px;">
                             {conf:.2f}%
@@ -158,10 +253,9 @@ if img:
                 )
 
         st.markdown("---")
-
         st.markdown("## 🔍 All 7 Class Predictions")
 
-        for i, idx in enumerate(sorted_idx):
+        for idx in sorted_idx:
             cls = CLASSES[idx]
             conf = preds[idx] * 100
             cls_name = CLASS_INFO[cls]['name']

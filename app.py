@@ -1,9 +1,52 @@
 import streamlit as st
 import sqlite3
 import hashlib
+import numpy as np
+import datetime
+import tensorflow as tf
+import gdown
+import os
 
-# ===== PAGE CONFIG =====
-st.set_page_config(page_title="🩺 Skin Cancer AI Classifier", layout="wide")
+from PIL import Image
+from tensorflow.keras.preprocessing import image
+
+# ==============================
+# MODEL + CONSTANTS
+# ==============================
+
+IMG_SIZE = 224
+
+CLASSES = ['akiec', 'bcc', 'bkl', 'df', 'mel', 'nv', 'vasc']
+
+CLASS_INFO = {
+    'akiec': {'name': 'Actinic Keratosis', 'type': 'Precancer'},
+    'bcc': {'name': 'Basal Cell Carcinoma', 'type': 'Cancer'},
+    'bkl': {'name': 'Benign Keratosis', 'type': 'Benign'},
+    'df': {'name': 'Dermatofibroma', 'type': 'Benign'},
+    'mel': {'name': 'Melanoma', 'type': 'Cancer'},
+    'nv': {'name': 'Melanocytic Nevus', 'type': 'Benign'},
+    'vasc': {'name': 'Vascular Lesion', 'type': 'Benign'}
+}
+
+MODEL_PATH = "skin_cancer_model.h5"
+DRIVE_FILE_ID = "1orMb-xYmIEfxoLbqRKw11TFk7euPs0gk"
+
+@st.cache_resource
+def load_model():
+
+    if not os.path.exists(MODEL_PATH):
+        url = f"https://drive.google.com/uc?id={DRIVE_FILE_ID}"
+        gdown.download(url, MODEL_PATH, quiet=False)
+
+    return tf.keras.models.load_model(MODEL_PATH)
+
+model = load_model()
+
+# ==============================
+# PAGE CONFIG
+# ==============================
+
+st.set_page_config(page_title="🩺 Skin Cancer AI Classifier", layout="wide")  
 
 # ==============================
 # DATABASE
